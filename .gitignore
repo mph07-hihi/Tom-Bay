@@ -1,0 +1,9 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs
+/TomBay/.vs/TomBay.slnx
+/TomBay/TomBay/x64/Debug
+/TomBay/x64/Debug
+/TomBay/TomBay/TomBay.vcxproj.user
