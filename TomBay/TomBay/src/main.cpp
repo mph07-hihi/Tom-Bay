@@ -7,8 +7,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow("TomBay Game", 800, 600, 0);
-    if (!window) {
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+
+    if (!SDL_CreateWindowAndRenderer("TomBay Game", 800, 600, 0, &window, &renderer)) {
         std::cout << "Error: " << SDL_GetError() << "\n";
         SDL_Quit();
         return 1;
@@ -23,9 +25,17 @@ int main(int argc, char* argv[]) {
                 isRunning = false;
             }
         }
+
+        SDL_SetRenderDrawColor(renderer, 100, 150, 255, 255);
+        SDL_RenderClear(renderer);
+        SDL_RenderPresent(renderer);
+
+        SDL_Delay(16);
     }
 
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+
     return 0;
 }

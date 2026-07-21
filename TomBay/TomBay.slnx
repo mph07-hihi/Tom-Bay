@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="TomBay/TomBay.vcxproj" />
+  <Project Path="TomBay/TomBay.vcxproj" Id="2fec44dd-dd1a-47af-93cd-35c5ca0b934d" />
 </Solution>
