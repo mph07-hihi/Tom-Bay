@@ -19,10 +19,10 @@ struct pipe {
 	float width, height;
 };
 const float PIPE_SPEED = 200.0f; // tốc độ di chuyển của pipe
-const float PIPE_GAP_SIZE = 180.0f; // khoảng cách giữa 2 pipe
-const float PIPE_WIDTH = 600.0f; // chiều rộng của pipe
+const float PIPE_GAP_SIZE = 180.0f; // khoảng cách giữa 2 pipe trên dưới 
+const float PIPE_WIDTH = 700.0f; // chiều rộng của pipe
 const float PIPE_HEIGHT = 500.0f; // chiều cao của pipe
-const float PIPE_SPAWN_TIME = 1.75f; // 2s tạo 1 pipe 
+const float PIPE_SPAWN_TIME = 1.75f; // 1.75s tạo 1 pipe 
 
 void spawnPipe(std::vector<pipe>& pipes) {
     pipe p;
@@ -71,6 +71,13 @@ int main(int argc, char* argv[]) {
     bgRect.y = 0.0f;
     bgRect.w = 1000.0f;
     bgRect.h = 700.0f;
+
+    SDL_Texture* datTex = loadTexture(renderer, "assets/dat.png");
+    SDL_FRect datRect;
+    datRect.x = 0.0f;
+    datRect.y = 0.0f;
+    datRect.w = 1000.0f;
+    datRect.h = 700.0f;
 
     std::vector<SDL_Texture*> birdFrames;
     birdFrames.push_back(loadTexture(renderer, "assets/tom1.png"));
@@ -166,6 +173,10 @@ int main(int argc, char* argv[]) {
             float bottomPipeY = p.gapY + p.gapSize / 2.0f;
             SDL_FRect bottomRect = { p.x, bottomPipeY, PIPE_WIDTH, PIPE_HEIGHT };
             SDL_RenderTexture(renderer, pipeTex, nullptr, &bottomRect);
+        }
+        // vẽ đất
+        if (datTex) {
+            SDL_RenderTexture(renderer, datTex, nullptr, &datRect);
         }
         // vẽ Tom
         if (!birdFrames.empty() && birdFrames[tom.currentFrame]) {
