@@ -39,6 +39,7 @@ void spawnPipe(std::vector<pipe>& pipes) {
     pipes.push_back(p);
 }
 
+
 SDL_Texture* loadTexture(SDL_Renderer* renderer, const char* path) {
     SDL_Surface* surface = IMG_Load(path);
     if (!surface) return nullptr;
@@ -137,6 +138,7 @@ int main(int argc, char* argv[]) {
             tom.y = 700.0f - tom.height;
             tom.velocity = 0.0f;
         }
+
 
         Uint64 currentTime = SDL_GetTicks();
         if (currentTime - lastFrameTime >= 100) {
