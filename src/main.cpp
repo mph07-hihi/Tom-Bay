@@ -64,6 +64,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     SDL_SetRenderVSync(renderer, 1);
+
     SDL_Texture* bgTexture = loadTexture(renderer, "assets/background.png");
     SDL_FRect bgRect;
     bgRect.x = 0.0f;
@@ -78,7 +79,7 @@ int main(int argc, char* argv[]) {
 
     bird tom;
     tom.currentFrame = 0;
-    tom.x = 200.0f;
+    tom.x = 400.0f;
     tom.y = 150.0f;
     tom.width = 220.0f;
     tom.height = 210.0f;
