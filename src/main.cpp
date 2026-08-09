@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <ctime>
 
+
 struct bird {
     int currentFrame;
     float x, y;
