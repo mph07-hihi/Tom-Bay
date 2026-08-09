@@ -2,6 +2,8 @@
 #include <SDL3_image/SDL_image.h>
 #include <iostream>
 #include <vector>
+#include <cstdlib>
+#include <ctime>
 
 struct bird {
     int currentFrame;
@@ -9,6 +11,33 @@ struct bird {
 	float width, height;
     float velocity, gravity, lift;
 };
+
+struct pipe {
+    float x;
+    float gapY;
+    float gapSize;
+	float width, height;
+};
+const float PIPE_SPEED = 200.0f; // tốc độ di chuyển của pipe
+const float PIPE_GAP_SIZE = 180.0f; // khoảng cách giữa 2 pipe
+const float PIPE_WIDTH = 600.0f; // chiều rộng của pipe
+const float PIPE_HEIGHT = 500.0f; // chiều cao của pipe
+const float PIPE_SPAWN_TIME = 1.75f; // 2s tạo 1 pipe 
+
+void spawnPipe(std::vector<pipe>& pipes) {
+    pipe p;
+    p.x = 1000.0f;
+    p.width = PIPE_WIDTH;
+    p.height = PIPE_HEIGHT;
+    p.gapSize = PIPE_GAP_SIZE;
+
+    const float SCREEN_HEIGHT = 600.0f;
+    float minY = 30.0f + p.gapSize / 2.0f;
+    float maxY = SCREEN_HEIGHT - 30.0f - p.gapSize / 2.0f;
+    p.gapY = minY + static_cast<float>(rand()) / RAND_MAX * (maxY - minY);
+
+    pipes.push_back(p);
+}
 
 SDL_Texture* loadTexture(SDL_Renderer* renderer, const char* path) {
     SDL_Surface* surface = IMG_Load(path);
@@ -19,6 +48,8 @@ SDL_Texture* loadTexture(SDL_Renderer* renderer, const char* path) {
 }
 
 int main(int argc, char* argv[]) {
+    srand (static_cast<unsigned int>(time(nullptr))); // random
+    
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         std::cout << "Error: " << SDL_GetError() << "\n";
         return 1;
@@ -32,6 +63,7 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
+    SDL_SetRenderVSync(renderer, 1);
     SDL_Texture* bgTexture = loadTexture(renderer, "assets/background.png");
     SDL_FRect bgRect;
     bgRect.x = 0.0f;
@@ -50,24 +82,31 @@ int main(int argc, char* argv[]) {
     tom.y = 150.0f;
     tom.width = 220.0f;
     tom.height = 210.0f;
+
     tom.velocity = 0.0f;
     tom.gravity = 900.0f;
     tom.lift = -400.0f;
 
-	int currentFrame = 0;
+    SDL_Texture* pipeTex = loadTexture(renderer, "assets/pipe.png");
+    if (!pipeTex) {
+        std::cout << "Không load được pipe texture!\n";
+    }
+
+	std::vector<pipe> pipes;
+    
+	float pipeTimer = 0.0f;
+	
     Uint64 lastFrameTime = SDL_GetTicks();
-    const Uint64 frameDelay = 100;
-   
     Uint64 lastTime = SDL_GetTicks();
 
     bool isRunning = true;
     SDL_Event event;
 
     while (isRunning) {
-        Uint64 currentTimePhysics = SDL_GetTicks();
-        float deltaTime = (currentTimePhysics - lastTime) / 1000.0f;
-        lastTime = currentTimePhysics;
-
+        Uint64 now = SDL_GetTicks();
+        float deltaTime = (now - lastTime) / 1000.0f;
+        lastTime = now;
+        // sự kiện phím
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
                 isRunning = false;
@@ -78,11 +117,12 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+
         tom.velocity += tom.gravity * deltaTime;
         tom.y += tom.velocity * deltaTime;
-
-        if (tom.y < 0.0f) {
-            tom.y = 0.0f;
+        // giới hạn biên
+        if (tom.y < -80.0f) {
+            tom.y = -80.0f;
             tom.velocity = 0.0f;
         }
         if (tom.y > 700.0f - tom.height) {
@@ -91,10 +131,25 @@ int main(int argc, char* argv[]) {
         }
 
         Uint64 currentTime = SDL_GetTicks();
-        if (currentTime - lastFrameTime >= frameDelay) {
+        if (currentTime - lastFrameTime >= 100) {
             tom.currentFrame = (tom.currentFrame + 1) % birdFrames.size();
             lastFrameTime = currentTime;
         }
+
+        pipeTimer += deltaTime;
+        if (pipeTimer >= PIPE_SPAWN_TIME) {
+            pipeTimer -= PIPE_SPAWN_TIME;
+            spawnPipe(pipes);
+        }
+		for (auto it = pipes.begin(); it != pipes.end(); ){
+			it->x -= PIPE_SPEED * deltaTime;
+			if (it->x + PIPE_WIDTH < 0) {
+				it = pipes.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
 
         SDL_SetRenderDrawColor(renderer, 100, 150, 255, 255);
         SDL_RenderClear(renderer);
@@ -102,7 +157,16 @@ int main(int argc, char* argv[]) {
         if (bgTexture) {
             SDL_RenderTexture(renderer, bgTexture, nullptr, &bgRect);
         }
-
+        // vẽ pipe
+        for (const auto& p : pipes) {
+			float topPipeY = p.gapY - p.gapSize / 2.0f - PIPE_HEIGHT;
+            SDL_FRect topRect = { p.x, topPipeY, PIPE_WIDTH, PIPE_HEIGHT };
+            SDL_RenderTextureRotated(renderer, pipeTex, nullptr, &topRect, 0.0, nullptr, SDL_FLIP_VERTICAL);
+            float bottomPipeY = p.gapY + p.gapSize / 2.0f;
+            SDL_FRect bottomRect = { p.x, bottomPipeY, PIPE_WIDTH, PIPE_HEIGHT };
+            SDL_RenderTexture(renderer, pipeTex, nullptr, &bottomRect);
+        }
+        // vẽ Tom
         if (!birdFrames.empty() && birdFrames[tom.currentFrame]) {
             SDL_FRect renderRect;
             renderRect.x = tom.x;
@@ -113,7 +177,7 @@ int main(int argc, char* argv[]) {
         }
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        
     }
    
     if (bgTexture) SDL_DestroyTexture(bgTexture);
@@ -121,6 +185,7 @@ int main(int argc, char* argv[]) {
     for (SDL_Texture* tex : birdFrames) {
         if (tex) SDL_DestroyTexture(tex);
     }
+	SDL_DestroyTexture(pipeTex);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
