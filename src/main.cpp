@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdlib>
 #include <ctime>
+using namespace std;
 
 struct bird {
     int currentFrame;
@@ -80,27 +81,40 @@ bool checkAABB(const SDL_FRect& a, const SDL_FRect& b) {
 
 // Hàm kiểm tra va chạm 
 bool checkPipeCollision(const bird& tom, const std::vector<pipe>& pipes) {
+
     SDL_FRect tomHitbox = {
-        tom.x + tom.width * 0.15f,
-        tom.y + tom.height * 0.15f,
-        tom.width * 0.70f,
-        tom.height * 0.70f
+        tom.x + tom.width * 0.25f,
+        tom.y + tom.height * 0.25f,
+        tom.width * 0.50f,
+        tom.height * 0.50f
     };
 
-    for (const auto& p : pipes) {
-        float pipeHitWidth = p.width * 0.80f;
-        float pipeHitX = p.x + p.width * 0.10f;
-        // Khung cột trên
-        float topPipeY = p.gapY - p.gapSize / 2.0f - PIPE_HEIGHT;
-        SDL_FRect topRect = { pipeHitX, topPipeY, pipeHitWidth, PIPE_HEIGHT };
-        // Khung cột dưới
-        float bottomPipeY = p.gapY + p.gapSize / 2.0f;
-        SDL_FRect bottomRect = { pipeHitX, bottomPipeY, pipeHitWidth, PIPE_HEIGHT };
+    float pipeOffsetY = 1.0f;
 
-        if (checkAABB(tomHitbox, topRect) || checkAABB(tomHitbox, bottomRect)) {
+    for (const auto& p : pipes) {
+
+        float pipeHitWidth = p.width * 0.35f;
+        float pipeHitX = p.x + (p.width - pipeHitWidth) / 2.0f;
+
+        // Cột trên
+        float topPipeY =
+            p.gapY - p.gapSize / 2.0f - PIPE_HEIGHT;
+
+        SDL_FRect topRect = { pipeHitX,topPipeY, pipeHitWidth,PIPE_HEIGHT - pipeOffsetY };
+
+        // Cột dưới
+        float bottomPipeY =
+            p.gapY + p.gapSize / 2.0f;
+
+        SDL_FRect bottomRect = { pipeHitX,bottomPipeY + pipeOffsetY,pipeHitWidth, PIPE_HEIGHT - pipeOffsetY };
+
+        if (checkAABB(tomHitbox, topRect) ||
+            checkAABB(tomHitbox, bottomRect)) {
+
             return true;
         }
     }
+
     return false;
 }
 
@@ -243,10 +257,12 @@ int main(int argc, char* argv[]) {
                 tom.velocity = 0.0f;
             }
             if (checkGround(tom, 615.0f)) {
+                cout << "DEAD: GROUND\n";
                 isGameOver = true;
             }
 
             if (checkPipeCollision(tom, pipes)) {
+                cout << "DEAD: PIPE\n";
                 isGameOver = true; 
             }
 
@@ -316,7 +332,6 @@ int main(int argc, char* argv[]) {
         if (currentSoundTex) {
             SDL_RenderTexture(renderer, currentSoundTex, nullptr, &soundBtnRect);
         }
-
         SDL_RenderPresent(renderer);
         
     }
