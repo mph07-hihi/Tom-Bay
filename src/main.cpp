@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <SDL3_ttf/SDL_ttf.h>
+#include <string>
 
 using namespace std;
 
@@ -71,20 +73,21 @@ SDL_FRect getBottomPipeHitbox(const pipe& p) {
     };
 }
 
-int loadBestScore() {
+void loadBestScore(int& bs, std::string& bName) {
     ifstream file("assets/best_score.txt");
-    int bs = 0;
+    bs = 0;
+    bName = "PLAYER";
     if (file.is_open()) {
         file >> bs;
+        file >> bName;
         file.close();
     }
-    return bs;
 }
 
-void saveBestScore(int bs) {
+void saveBestScore(int bs, const std::string& bName) {
     ofstream file("assets/best_score.txt");
     if (file.is_open()) {
-        file << bs;
+        file << bs << "\n" << bName;
         file.close();
     }
 }
@@ -95,7 +98,7 @@ void spawnPipe(std::vector<pipe>& pipes) {
     p.width = PIPE_WIDTH;
     p.height = PIPE_HEIGHT;
     p.gapSize = PIPE_GAP_SIZE;
-	p.passed = false;
+    p.passed = false;
 
     const float MAX_PLAY_HEIGHT = GROUND_Y;
     float minY = 50.0f + p.gapSize / 2.0f;
@@ -107,6 +110,14 @@ void spawnPipe(std::vector<pipe>& pipes) {
 
 SDL_Texture* loadTexture(SDL_Renderer* renderer, const char* path) {
     SDL_Surface* surface = IMG_Load(path);
+    if (!surface) return nullptr;
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_DestroySurface(surface);
+    return texture;
+}
+
+SDL_Texture* renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), 0, color);
     if (!surface) return nullptr;
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_DestroySurface(surface);
@@ -167,6 +178,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    if (TTF_Init() == -1) {
+        std::cout << "Error TTF\n";
+        return 1;
+    }
+
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
 
@@ -176,6 +192,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     SDL_SetRenderVSync(renderer, 1);
+
+    TTF_Font* font = TTF_OpenFont("assets/font.ttf", 28);
 
     SDL_Texture* bgTexture = loadTexture(renderer, "assets/background.png");
     SDL_FRect bgRect = { 0.0f, 0.0f, 1000.0f, 700.0f };
@@ -228,7 +246,14 @@ int main(int argc, char* argv[]) {
     bool isGameOver = false;
     bool isGameStarted = false;
     int score = 0;
-    int bestScore = loadBestScore();
+
+    int bestScore = 0;
+    std::string bestName = "";
+    loadBestScore(bestScore, bestName);
+
+    std::string playerName = "";
+    bool isEnteringName = false;
+
     SDL_Event event;
 
     while (isRunning) {
@@ -243,31 +268,55 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_EVENT_QUIT) {
                 isRunning = false;
             }
-            if (event.type == SDL_EVENT_KEY_DOWN) {
-                if (event.key.key == SDLK_SPACE && !isGameOver) {
-                    tom.velocity = tom.lift;
-					isGameStarted = true;
+
+            if (isEnteringName) {
+                if (event.type == SDL_EVENT_TEXT_INPUT) {
+                    if (playerName.length() < 12) { // Giới hạn độ dài tên
+                        playerName += event.text.text;
+                    }
+                }
+                else if (event.type == SDL_EVENT_KEY_DOWN) {
+                    if (event.key.key == SDLK_BACKSPACE && playerName.length() > 0) {
+                        playerName.pop_back(); // Xóa ký tự
+                    }
+                    else if (event.key.key == SDLK_RETURN || event.key.key == SDLK_KP_ENTER) {
+                        isEnteringName = false;
+                        if (playerName.empty()) {
+                            playerName = "PLAYER";
+                        }
+                        bestName = playerName;
+                        saveBestScore(bestScore, bestName); 
+                        SDL_StopTextInput(window);
+                    }
                 }
             }
-            if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-                if (event.button.button == SDL_BUTTON_LEFT) {
-                    if (isButtonClicked(event.button.x, event.button.y, topRestartBtnRect)) {
-                        resetGame(tom, pipes, pipeTimer, isGameOver, isGameStarted, score);
+            else {
+                if (event.type == SDL_EVENT_KEY_DOWN) {
+                    if (event.key.key == SDLK_SPACE && !isGameOver) {
+                        tom.velocity = tom.lift;
+                        isGameStarted = true;
                     }
-                    else if (isButtonClicked(event.button.x, event.button.y, soundBtnRect)) {
-                        isMuted = !isMuted;
-                    }
-                    else if (isGameOver) {
-                        if (isButtonClicked(event.button.x, event.button.y, restartBtnRect)) {
+                }
+                if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        if (isButtonClicked(event.button.x, event.button.y, topRestartBtnRect)) {
                             resetGame(tom, pipes, pipeTimer, isGameOver, isGameStarted, score);
                         }
-                    }
-                    else {
-                        tom.velocity = tom.lift;
-						isGameStarted = true;
+                        else if (isButtonClicked(event.button.x, event.button.y, soundBtnRect)) {
+                            isMuted = !isMuted;
+                        }
+                        else if (isGameOver) {
+                            if (isButtonClicked(event.button.x, event.button.y, restartBtnRect)) {
+                                resetGame(tom, pipes, pipeTimer, isGameOver, isGameStarted, score);
+                            }
+                        }
+                        else {
+                            tom.velocity = tom.lift;
+                            isGameStarted = true;
+                        }
                     }
                 }
-            }
+            } 
         }
 
         if (!isGameOver && isGameStarted) {
@@ -281,7 +330,7 @@ int main(int argc, char* argv[]) {
 
             for (auto it = pipes.begin(); it != pipes.end(); ) {
                 it->x -= PIPE_SPEED * deltaTime;
-                if (!it->passed && tom.x > it->x + PIPE_VISIBLE_RIGHT ) {
+                if (!it->passed && tom.x > it->x + PIPE_VISIBLE_RIGHT) {
                     score++;
                     it->passed = true;
                     std::cout << "Score: " << score << "\n";
@@ -299,7 +348,10 @@ int main(int argc, char* argv[]) {
                 isGameOver = true;
                 if (score > bestScore) {
                     bestScore = score;
-                    saveBestScore(bestScore);
+                    
+                    isEnteringName = true;
+                    playerName = "";
+                    SDL_StartTextInput(window);
                 }
                 cout << "Best Score: " << bestScore << "\n";
             }
@@ -308,7 +360,10 @@ int main(int argc, char* argv[]) {
                 isGameOver = true;
                 if (score > bestScore) {
                     bestScore = score;
-                    saveBestScore(bestScore);
+                   
+                    isEnteringName = true;
+                    playerName = "";
+                    SDL_StartTextInput(window);
                 }
                 cout << "Best Score: " << bestScore << "\n";
             }
@@ -361,6 +416,75 @@ int main(int argc, char* argv[]) {
         // Vẽ Menu Game Over
         if (isGameOver && gameOverTexture) {
             SDL_RenderTexture(renderer, gameOverTexture, nullptr, &gameOverRect);
+
+            if (font) {
+
+                // Score 
+                SDL_Color scoreColor = { 128, 117, 101, 255 };
+                std::string scoreStr = "SCORE : " + std::to_string(score);
+                SDL_Texture* scoreTex = renderText(renderer, font, scoreStr, scoreColor);
+                if (scoreTex) {
+                    float texW = 0.0f, texH = 0.0f;
+                    SDL_GetTextureSize(scoreTex, &texW, &texH);
+
+                    float renderWidth = texW * (32.0f / texH);
+
+                    SDL_FRect sRect = { 355.0f, 378.0f, renderWidth, 35.0f };
+                    SDL_RenderTexture(renderer, scoreTex, nullptr, &sRect);
+                    SDL_DestroyTexture(scoreTex);
+                }
+
+                // Best Score 
+                SDL_Color bestScoreColor = { 128, 117, 101, 255 };
+                std::string bestStr = "BEST SCORE : " + std::to_string(bestScore);
+                SDL_Texture* bestTex = renderText(renderer, font, bestStr, bestScoreColor);
+                if (bestTex) {
+                    
+                    float texW = 0.0f, texH = 0.0f;
+                    SDL_GetTextureSize(bestTex, &texW, &texH);
+
+                    float renderWidth = texW * (32.0f / texH);
+
+                    SDL_FRect bRect = { 415.0f, 240.0f, renderWidth, 35.0f };
+                    SDL_RenderTexture(renderer, bestTex, nullptr, &bRect);
+                    SDL_DestroyTexture(bestTex);
+                }
+
+                // best player name
+                if (isEnteringName) {
+                    if ((SDL_GetTicks() / 500) % 2 == 0) {
+                        SDL_Color notifyColor = { 255, 0, 0, 255 };
+                        std::string notifyStr = "NEW RECORD! ENTER NAME";
+                        SDL_Texture* notifyTex = renderText(renderer, font, notifyStr, notifyColor);
+                        if (notifyTex) {
+                            float texW = 0.0f, texH = 0.0f;
+                            SDL_GetTextureSize(notifyTex, &texW, &texH);
+                            float rWidth = texW * (18.0f / texH);
+
+                            SDL_FRect notifyRect = { 385.0f, 340.0f, rWidth, 19.0f };
+                            SDL_RenderTexture(renderer, notifyTex, nullptr, &notifyRect);
+                            SDL_DestroyTexture(notifyTex);
+                        }
+                    }
+                }
+                std::string nameToRender = isEnteringName ? (playerName + "_") : bestName;
+                if (!nameToRender.empty()) {
+                    SDL_Color playerNameColor = { 230, 174, 158, 255 };
+                    SDL_Texture* nameTex = renderText(renderer, font, nameToRender, playerNameColor);
+                    if (nameTex) {
+                        float texW = 0.0f, texH = 0.0f;
+                        SDL_GetTextureSize(nameTex, &texW, &texH);
+                        float rWidth = texW * (32.0f / texH);
+
+                        float renderX = 520.0f - (rWidth / 2.0f);
+                        
+                        
+                        SDL_FRect nameRect = { renderX, 290.0f, rWidth, 30.0f };
+                        SDL_RenderTexture(renderer, nameTex, nullptr, &nameRect);
+                        SDL_DestroyTexture(nameTex);
+                    }
+                }
+            }
         }
 
         // Vẽ nút Restart góc trên
@@ -374,7 +498,6 @@ int main(int argc, char* argv[]) {
             SDL_RenderTexture(renderer, currentSoundTex, nullptr, &soundBtnRect);
         }
 
-     
         SDL_RenderPresent(renderer);
     }
 
@@ -389,6 +512,9 @@ int main(int argc, char* argv[]) {
         if (tex) SDL_DestroyTexture(tex);
     }
     if (pipeTex) SDL_DestroyTexture(pipeTex);
+
+    if (font) TTF_CloseFont(font);
+    TTF_Quit();
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
