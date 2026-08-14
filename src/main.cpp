@@ -8,7 +8,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
-#include "../external/include/SDL3_mixer/SDL_mixer.h"
+#include <SDL3_mixer/SDL_mixer.h>
+#include <cmath>
 
 using namespace std;
 
@@ -489,7 +490,24 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
+        if (!isGameStarted && !isGameOver) {
+            if (font) {
+                SDL_Color startColor = { 255, 255, 255, 255 };
+                std::string startStr = "Press SPACE or CLICK to Fly";
+                SDL_Texture* startTex = renderText(renderer, font, startStr, startColor);
+                if (startTex) {
+                    float texW = 0.0f, texH = 0.0f;
+                    SDL_GetTextureSize(startTex, &texW, &texH);
+                    float renderWidth = texW * (30.0f / texH);
 
+                    float offsetY = sin(SDL_GetTicks() / 200.0f) * 10.0f;
+                    SDL_FRect startRect = { 500.0f - (renderWidth / 2.0f), 220.0f + offsetY, renderWidth, 30.0f };
+
+                    SDL_RenderTexture(renderer, startTex, nullptr, &startRect);
+                    SDL_DestroyTexture(startTex);
+                }
+            }
+        }
         if (topRestartTex) {
             SDL_RenderTexture(renderer, topRestartTex, nullptr, &topRestartBtnRect);
         }
