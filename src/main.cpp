@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include <string>
 #include <cstdlib>
@@ -28,6 +28,7 @@ struct pipe {
     bool passed;
 };
 
+// ================= THÔNG SỐ CỦA PIPE =================
 const float PIPE_SPEED = 200.0f;
 const float PIPE_GAP_SIZE = 180.0f;
 const float PIPE_WIDTH = 200.0f;
@@ -39,6 +40,14 @@ const float GROUND_Y = 615.0f;
 const float PIPE_VISIBLE_LEFT = 70.0f;
 const float PIPE_VISIBLE_RIGHT = 130.0f;
 const float PIPE_MARGIN_Y = 8.0f;
+
+// ================= THÔNG SỐ CỦA TOM =================
+const float TOM_START_X = 350.0f;
+const float TOM_START_Y = 300.0f;
+const float TOM_WIDTH = 70.0f;
+const float TOM_HEIGHT = 50.0f;
+const float TOM_GRAVITY = 900.0f;
+const float TOM_LIFT = -400.0f;
 
 const float TOM_HIT_X = 0.20f;
 const float TOM_HIT_Y = 0.20f;
@@ -141,8 +150,10 @@ bool isButtonClicked(float mouseX, float mouseY, const SDL_FRect& buttonRect) {
 }
 
 void resetGame(bird& tom, std::vector<pipe>& pipes, float& pipeTimer, bool& isGameOver, bool& isGameStarted, int& score) {
-    tom.y = 300.0f;
+    tom.x = TOM_START_X;
+    tom.y = TOM_START_Y;
     tom.velocity = 0.0f;
+    tom.currentFrame = 0;
     pipes.clear();
     pipeTimer = 0.0f;
     isGameOver = false;
@@ -232,15 +243,16 @@ int main(int argc, char* argv[]) {
     birdFrames.push_back(loadTexture(renderer, "assets/tom2.png"));
     birdFrames.push_back(loadTexture(renderer, "assets/tom3.png"));
 
+    // Khởi tạo Tom sử dụng các hằng số bên ngoài
     bird tom;
     tom.currentFrame = 0;
-    tom.x = 350.0f;
-    tom.y = 300.0f;
-    tom.width = 70.0f;
-    tom.height = 50.0f;
+    tom.x = TOM_START_X;
+    tom.y = TOM_START_Y;
+    tom.width = TOM_WIDTH;
+    tom.height = TOM_HEIGHT;
     tom.velocity = 0.0f;
-    tom.gravity = 900.0f;
-    tom.lift = -400.0f;
+    tom.gravity = TOM_GRAVITY;
+    tom.lift = TOM_LIFT;
 
     SDL_Texture* gameOverTexture = loadTexture(renderer, "assets/menu.png");
     SDL_FRect gameOverRect = { -50.0f, 20.0f, 1000.0f, 700.0f };
@@ -350,6 +362,16 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // 1. Cập nhật animation vỗ cánh liên tục bất cứ khi nào chưa GameOver (kể cả chưa Start)
+        if (!isGameOver) {
+            Uint64 currentTime = SDL_GetTicks();
+            if (currentTime - lastFrameTime >= frameDelay) {
+                tom.currentFrame = (tom.currentFrame + 1) % birdFrames.size();
+                lastFrameTime = currentTime;
+            }
+        }
+
+        // 2. Cập nhật di chuyển vật lý & ống chướng ngại vật (CHỈ KHI ĐÃ START)
         if (!isGameOver && isGameStarted) {
             tom.velocity += tom.gravity * deltaTime;
             tom.y += tom.velocity * deltaTime;
@@ -387,12 +409,6 @@ int main(int argc, char* argv[]) {
                 }
             }
 
-            Uint64 currentTime = SDL_GetTicks();
-            if (currentTime - lastFrameTime >= frameDelay) {
-                tom.currentFrame = (tom.currentFrame + 1) % birdFrames.size();
-                lastFrameTime = currentTime;
-            }
-
             pipeTimer += deltaTime;
             if (pipeTimer >= PIPE_SPAWN_TIME) {
                 pipeTimer -= PIPE_SPAWN_TIME;
@@ -423,7 +439,8 @@ int main(int argc, char* argv[]) {
 
         if (!birdFrames.empty() && birdFrames[tom.currentFrame]) {
             SDL_FRect renderRect = { tom.x, tom.y, tom.width, tom.height };
-            double angle = tom.velocity * 0.04;
+            // Khi chưa bấm Start, Tom chỉ giữ góc nghiêng bằng 0 (thẳng đứng)
+            double angle = isGameStarted ? (tom.velocity * 0.04) : 0.0;
             if (angle < -20.0) angle = -20.0;
             if (angle > 60.0)  angle = 60.0;
             SDL_RenderTextureRotated(renderer, birdFrames[tom.currentFrame], nullptr, &renderRect, angle, nullptr, SDL_FLIP_NONE);
