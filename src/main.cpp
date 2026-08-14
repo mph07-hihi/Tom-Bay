@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdlib>
 #include <ctime>
+#include <fstream>
 
 using namespace std;
 
@@ -70,6 +71,24 @@ SDL_FRect getBottomPipeHitbox(const pipe& p) {
     };
 }
 
+int loadBestScore() {
+    ifstream file("assets/best_score.txt");
+    int bs = 0;
+    if (file.is_open()) {
+        file >> bs;
+        file.close();
+    }
+    return bs;
+}
+
+void saveBestScore(int bs) {
+    ofstream file("assets/best_score.txt");
+    if (file.is_open()) {
+        file << bs;
+        file.close();
+    }
+}
+
 void spawnPipe(std::vector<pipe>& pipes) {
     pipe p;
     p.x = 1000.0f;
@@ -110,7 +129,7 @@ bool isButtonClicked(float mouseX, float mouseY, const SDL_FRect& buttonRect) {
 }
 
 void resetGame(bird& tom, std::vector<pipe>& pipes, float& pipeTimer, bool& isGameOver, bool& isGameStarted, int& score) {
-    tom.y = 150.0f;
+    tom.y = 300.0f;
     tom.velocity = 0.0f;
     pipes.clear();
     pipeTimer = 0.0f;
@@ -209,6 +228,7 @@ int main(int argc, char* argv[]) {
     bool isGameOver = false;
     bool isGameStarted = false;
     int score = 0;
+    int bestScore = loadBestScore();
     SDL_Event event;
 
     while (isRunning) {
@@ -261,7 +281,7 @@ int main(int argc, char* argv[]) {
 
             for (auto it = pipes.begin(); it != pipes.end(); ) {
                 it->x -= PIPE_SPEED * deltaTime;
-                if (!it->passed && tom.x > it->x + it->width) {
+                if (!it->passed && tom.x > it->x + PIPE_VISIBLE_RIGHT ) {
                     score++;
                     it->passed = true;
                     std::cout << "Score: " << score << "\n";
@@ -277,10 +297,20 @@ int main(int argc, char* argv[]) {
             if (checkGround(tom, GROUND_Y)) {
                 cout << "DEAD: GROUND\n";
                 isGameOver = true;
+                if (score > bestScore) {
+                    bestScore = score;
+                    saveBestScore(bestScore);
+                }
+                cout << "Best Score: " << bestScore << "\n";
             }
             else if (checkPipeCollision(tom, pipes)) {
                 cout << "DEAD: PIPE\n";
                 isGameOver = true;
+                if (score > bestScore) {
+                    bestScore = score;
+                    saveBestScore(bestScore);
+                }
+                cout << "Best Score: " << bestScore << "\n";
             }
 
             Uint64 currentTime = SDL_GetTicks();
