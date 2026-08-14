@@ -374,21 +374,7 @@ int main(int argc, char* argv[]) {
             SDL_RenderTexture(renderer, currentSoundTex, nullptr, &soundBtnRect);
         }
 
-        //SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-
-        //// Vẽ Hitbox Tom
-        //SDL_FRect debugTom = getTomHitbox(tom);
-        //SDL_RenderRect(renderer, &debugTom);
-
-        //// Vẽ Hitbox Cột 
-        //for (const auto& p : pipes) {
-        //    SDL_FRect topHitbox = getTopPipeHitbox(p);
-        //    SDL_FRect bottomHitbox = getBottomPipeHitbox(p);
-
-        //    SDL_RenderRect(renderer, &topHitbox);
-        //    SDL_RenderRect(renderer, &bottomHitbox);
-        //}
-
+     
         SDL_RenderPresent(renderer);
     }
 
