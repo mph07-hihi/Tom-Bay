@@ -19,6 +19,7 @@ struct pipe {
     float gapY;
     float gapSize;
     float width, height;
+    bool passed;
 };
 
 const float PIPE_SPEED = 200.0f;     // Tốc độ di chuyển của cột
@@ -75,6 +76,7 @@ void spawnPipe(std::vector<pipe>& pipes) {
     p.width = PIPE_WIDTH;
     p.height = PIPE_HEIGHT;
     p.gapSize = PIPE_GAP_SIZE;
+	p.passed = false;
 
     const float MAX_PLAY_HEIGHT = GROUND_Y;
     float minY = 50.0f + p.gapSize / 2.0f;
@@ -107,12 +109,14 @@ bool isButtonClicked(float mouseX, float mouseY, const SDL_FRect& buttonRect) {
         mouseY >= buttonRect.y && mouseY <= buttonRect.y + buttonRect.h);
 }
 
-void resetGame(bird& tom, std::vector<pipe>& pipes, float& pipeTimer, bool& isGameOver) {
+void resetGame(bird& tom, std::vector<pipe>& pipes, float& pipeTimer, bool& isGameOver, bool& isGameStarted, int& score) {
     tom.y = 150.0f;
     tom.velocity = 0.0f;
     pipes.clear();
     pipeTimer = 0.0f;
     isGameOver = false;
+    isGameStarted = false;
+    score = 0;
 }
 
 bool checkAABB(const SDL_FRect& a, const SDL_FRect& b) {
@@ -203,6 +207,8 @@ int main(int argc, char* argv[]) {
 
     bool isRunning = true;
     bool isGameOver = false;
+    bool isGameStarted = false;
+    int score = 0;
     SDL_Event event;
 
     while (isRunning) {
@@ -220,29 +226,31 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_EVENT_KEY_DOWN) {
                 if (event.key.key == SDLK_SPACE && !isGameOver) {
                     tom.velocity = tom.lift;
+					isGameStarted = true;
                 }
             }
             if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
                 if (event.button.button == SDL_BUTTON_LEFT) {
                     if (isButtonClicked(event.button.x, event.button.y, topRestartBtnRect)) {
-                        resetGame(tom, pipes, pipeTimer, isGameOver);
+                        resetGame(tom, pipes, pipeTimer, isGameOver, isGameStarted, score);
                     }
                     else if (isButtonClicked(event.button.x, event.button.y, soundBtnRect)) {
                         isMuted = !isMuted;
                     }
                     else if (isGameOver) {
                         if (isButtonClicked(event.button.x, event.button.y, restartBtnRect)) {
-                            resetGame(tom, pipes, pipeTimer, isGameOver);
+                            resetGame(tom, pipes, pipeTimer, isGameOver, isGameStarted, score);
                         }
                     }
                     else {
                         tom.velocity = tom.lift;
+						isGameStarted = true;
                     }
                 }
             }
         }
 
-        if (!isGameOver) {
+        if (!isGameOver && isGameStarted) {
             tom.velocity += tom.gravity * deltaTime;
             tom.y += tom.velocity * deltaTime;
 
@@ -253,6 +261,11 @@ int main(int argc, char* argv[]) {
 
             for (auto it = pipes.begin(); it != pipes.end(); ) {
                 it->x -= PIPE_SPEED * deltaTime;
+                if (!it->passed && tom.x > it->x + it->width) {
+                    score++;
+                    it->passed = true;
+                    std::cout << "Score: " << score << "\n";
+                }
                 if (it->x + PIPE_WIDTH < 0) {
                     it = pipes.erase(it);
                 }
