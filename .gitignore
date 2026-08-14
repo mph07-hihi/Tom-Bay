@@ -10,3 +10,5 @@
 /TomBay/main/x64/Debug
 /x64/Debug
 /TomBay.vcxproj.user
+/SDL3_mixer.dll
+/SDL3_ttf.dll
