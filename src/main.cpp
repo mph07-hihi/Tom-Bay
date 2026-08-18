@@ -28,7 +28,6 @@ struct pipe {
     bool passed;
 };
 
-// ================= THÔNG SỐ CỦA PIPE =================
 const float PIPE_SPEED = 200.0f;
 const float PIPE_GAP_SIZE = 180.0f;
 const float PIPE_WIDTH = 200.0f;
@@ -41,7 +40,6 @@ const float PIPE_VISIBLE_LEFT = 70.0f;
 const float PIPE_VISIBLE_RIGHT = 130.0f;
 const float PIPE_MARGIN_Y = 8.0f;
 
-// ================= THÔNG SỐ CỦA TOM =================
 const float TOM_START_X = 350.0f;
 const float TOM_START_Y = 300.0f;
 const float TOM_WIDTH = 70.0f;
@@ -243,7 +241,6 @@ int main(int argc, char* argv[]) {
     birdFrames.push_back(loadTexture(renderer, "assets/tom2.png"));
     birdFrames.push_back(loadTexture(renderer, "assets/tom3.png"));
 
-    // Khởi tạo Tom sử dụng các hằng số bên ngoài
     bird tom;
     tom.currentFrame = 0;
     tom.x = TOM_START_X;
@@ -362,7 +359,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // 1. Cập nhật animation vỗ cánh liên tục bất cứ khi nào chưa GameOver (kể cả chưa Start)
         if (!isGameOver) {
             Uint64 currentTime = SDL_GetTicks();
             if (currentTime - lastFrameTime >= frameDelay) {
@@ -371,7 +367,6 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // 2. Cập nhật di chuyển vật lý & ống chướng ngại vật (CHỈ KHI ĐÃ START)
         if (!isGameOver && isGameStarted) {
             tom.velocity += tom.gravity * deltaTime;
             tom.y += tom.velocity * deltaTime;
@@ -439,11 +434,27 @@ int main(int argc, char* argv[]) {
 
         if (!birdFrames.empty() && birdFrames[tom.currentFrame]) {
             SDL_FRect renderRect = { tom.x, tom.y, tom.width, tom.height };
-            // Khi chưa bấm Start, Tom chỉ giữ góc nghiêng bằng 0 (thẳng đứng)
             double angle = isGameStarted ? (tom.velocity * 0.04) : 0.0;
             if (angle < -20.0) angle = -20.0;
             if (angle > 60.0)  angle = 60.0;
             SDL_RenderTextureRotated(renderer, birdFrames[tom.currentFrame], nullptr, &renderRect, angle, nullptr, SDL_FLIP_NONE);
+        }
+
+        if (!isGameOver && isGameStarted) {
+            if (font) {
+                SDL_Color playingScoreColor = { 255, 255, 255, 255 };
+                std::string currentScoreStr = std::to_string(score);
+                SDL_Texture* currentScoreTex = renderText(renderer, font, currentScoreStr, playingScoreColor);
+                if (currentScoreTex) {
+                    float texW = 0.0f, texH = 0.0f;
+                    SDL_GetTextureSize(currentScoreTex, &texW, &texH);
+                    float renderHeight = 60.0f;
+                    float renderWidth = texW * (renderHeight / texH);
+                    SDL_FRect sRect = { 500.0f - (renderWidth / 2.0f), 70.0f, renderWidth, renderHeight };
+                    SDL_RenderTexture(renderer, currentScoreTex, nullptr, &sRect);
+                    SDL_DestroyTexture(currentScoreTex);
+                }
+            }
         }
 
         if (isGameOver && gameOverTexture) {
