@@ -81,7 +81,7 @@ SDL_FRect getBottomPipeHitbox(const pipe& p) {
     };
 }
 
-void loadBestScore(int& bs, std::string& bName) {
+void loadBestScore(int& bs, string& bName) {
     ifstream file("assets/best_score.txt");
     bs = 0;
     bName = "PLAYER";
@@ -92,7 +92,7 @@ void loadBestScore(int& bs, std::string& bName) {
     }
 }
 
-void saveBestScore(int bs, const std::string& bName) {
+void saveBestScore(int bs, const string& bName) {
     ofstream file("assets/best_score.txt");
     if (file.is_open()) {
         file << bs << "\n" << bName;
@@ -100,7 +100,7 @@ void saveBestScore(int bs, const std::string& bName) {
     }
 }
 
-void spawnPipe(std::vector<pipe>& pipes) {
+void spawnPipe(vector<pipe>& pipes) {
     pipe p;
     p.x = 1000.0f;
     p.width = PIPE_WIDTH;
@@ -124,7 +124,7 @@ SDL_Texture* loadTexture(SDL_Renderer* renderer, const char* path) {
     return texture;
 }
 
-SDL_Texture* renderText(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, SDL_Color color) {
+SDL_Texture* renderText(SDL_Renderer* renderer, TTF_Font* font, const string& text, SDL_Color color) {
     SDL_Surface* surface = TTF_RenderText_Solid(font, text.c_str(), 0, color);
     if (!surface) return nullptr;
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -147,7 +147,7 @@ bool isButtonClicked(float mouseX, float mouseY, const SDL_FRect& buttonRect) {
         mouseY >= buttonRect.y && mouseY <= buttonRect.y + buttonRect.h);
 }
 
-void resetGame(bird& tom, std::vector<pipe>& pipes, float& pipeTimer, bool& isGameOver, bool& isGameStarted, int& score) {
+void resetGame(bird& tom, vector<pipe>& pipes, float& pipeTimer, bool& isGameOver, bool& isGameStarted, int& score) {
     tom.x = TOM_START_X;
     tom.y = TOM_START_Y;
     tom.velocity = 0.0f;
@@ -166,7 +166,7 @@ bool checkAABB(const SDL_FRect& a, const SDL_FRect& b) {
         a.y + a.h > b.y);
 }
 
-bool checkPipeCollision(const bird& tom, const std::vector<pipe>& pipes) {
+bool checkPipeCollision(const bird& tom, const vector<pipe>& pipes) {
     SDL_FRect tomHitbox = getTomHitbox(tom);
 
     for (const auto& p : pipes) {
@@ -184,22 +184,22 @@ int main(int argc, char* argv[]) {
     srand(static_cast<unsigned int>(time(nullptr)));
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
-        std::cout << "Error SDL: " << SDL_GetError() << "\n";
+        cout << "Error SDL: " << SDL_GetError() << "\n";
         return 1;
     }
 
     if (!TTF_Init()) {
-        std::cout << "Error TTF\n";
+        cout << "Error TTF\n";
         return 1;
     }
 
     if (!MIX_Init()) {
-        std::cout << "Error Mixer Init: " << SDL_GetError() << "\n";
+        cout << "Error Mixer Init: " << SDL_GetError() << "\n";
     }
 
     MIX_Mixer* gMixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
     if (!gMixer) {
-        std::cout << "Error Mixer Create: " << SDL_GetError() << "\n";
+        cout << "Error Mixer Create: " << SDL_GetError() << "\n";
     }
 
     MIX_Audio* bgMusic = MIX_LoadAudio(gMixer, "assets/main_theme.mp3", true);
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
     SDL_Renderer* renderer = nullptr;
 
     if (!SDL_CreateWindowAndRenderer("TomBay Game", 1000, 700, 0, &window, &renderer)) {
-        std::cout << "Error: " << SDL_GetError() << "\n";
+        cout << "Error: " << SDL_GetError() << "\n";
         SDL_Quit();
         return 1;
     }
@@ -236,7 +236,7 @@ int main(int argc, char* argv[]) {
     SDL_Texture* datTex = loadTexture(renderer, "assets/dat.png");
     SDL_FRect datRect = { 0.0f, 0.0f, 1000.0f, 700.0f };
 
-    std::vector<SDL_Texture*> birdFrames;
+    vector<SDL_Texture*> birdFrames;
     birdFrames.push_back(loadTexture(renderer, "assets/tom1.png"));
     birdFrames.push_back(loadTexture(renderer, "assets/tom2.png"));
     birdFrames.push_back(loadTexture(renderer, "assets/tom3.png"));
@@ -265,7 +265,7 @@ int main(int argc, char* argv[]) {
     SDL_FRect soundBtnRect = { 950.0f, 10.0f, 45.0f, 45.0f };
     SDL_FRect topRestartBtnRect = { 900.0f, 10.0f, 45.0f, 45.0f };
 
-    std::vector<pipe> pipes;
+    vector<pipe> pipes;
     float pipeTimer = 0.0f;
 
     SDL_Texture* pipeTex = loadTexture(renderer, "assets/pipe.png");
@@ -280,10 +280,10 @@ int main(int argc, char* argv[]) {
     int score = 0;
 
     int bestScore = 0;
-    std::string bestName = "";
+    string bestName = "";
     loadBestScore(bestScore, bestName);
 
-    std::string playerName = "";
+    string playerName = "";
     bool isEnteringName = false;
 
     SDL_Event event;
@@ -443,7 +443,7 @@ int main(int argc, char* argv[]) {
         if (!isGameOver && isGameStarted) {
             if (font) {
                 SDL_Color playingScoreColor = { 255, 255, 255, 255 };
-                std::string currentScoreStr = std::to_string(score);
+                string currentScoreStr = to_string(score);
                 SDL_Texture* currentScoreTex = renderText(renderer, font, currentScoreStr, playingScoreColor);
                 if (currentScoreTex) {
                     float texW = 0.0f, texH = 0.0f;
@@ -462,7 +462,7 @@ int main(int argc, char* argv[]) {
 
             if (font) {
                 SDL_Color scoreColor = { 128, 117, 101, 255 };
-                std::string scoreStr = "SCORE : " + std::to_string(score);
+                string scoreStr = "SCORE : " + to_string(score);
                 SDL_Texture* scoreTex = renderText(renderer, font, scoreStr, scoreColor);
                 if (scoreTex) {
                     float texW = 0.0f, texH = 0.0f;
@@ -474,7 +474,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 SDL_Color bestScoreColor = { 128, 117, 101, 255 };
-                std::string bestStr = "BEST SCORE : " + std::to_string(bestScore);
+                string bestStr = "BEST SCORE : " + to_string(bestScore);
                 SDL_Texture* bestTex = renderText(renderer, font, bestStr, bestScoreColor);
                 if (bestTex) {
                     float texW = 0.0f, texH = 0.0f;
@@ -488,7 +488,7 @@ int main(int argc, char* argv[]) {
                 if (isEnteringName) {
                     if ((SDL_GetTicks() / 500) % 2 == 0) {
                         SDL_Color notifyColor = { 255, 0, 0, 255 };
-                        std::string notifyStr = "NEW RECORD! ENTER NAME";
+                        string notifyStr = "NEW RECORD! ENTER NAME";
                         SDL_Texture* notifyTex = renderText(renderer, font, notifyStr, notifyColor);
                         if (notifyTex) {
                             float texW = 0.0f, texH = 0.0f;
@@ -501,7 +501,7 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
-                std::string nameToRender = isEnteringName ? (playerName + "_") : bestName;
+                string nameToRender = isEnteringName ? (playerName + "_") : bestName;
                 if (!nameToRender.empty()) {
                     SDL_Color playerNameColor = { 230, 174, 158, 255 };
                     SDL_Texture* nameTex = renderText(renderer, font, nameToRender, playerNameColor);
@@ -521,7 +521,7 @@ int main(int argc, char* argv[]) {
         if (!isGameStarted && !isGameOver) {
             if (font) {
                 SDL_Color startColor = { 255, 255, 255, 255 };
-                std::string startStr = "Press SPACE or CLICK to Fly";
+                string startStr = "Press SPACE or CLICK to Fly";
                 SDL_Texture* startTex = renderText(renderer, font, startStr, startColor);
                 if (startTex) {
                     float texW = 0.0f, texH = 0.0f;
